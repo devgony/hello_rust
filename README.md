@@ -419,3 +419,23 @@ fn main() {
     println!("LIFTOFF!!!");
 }
 ```
+
+# 4.1. What Is Ownership?
+
+- Some languages have garbage collection that constantly looks for no longer used memory as the program runs;
+- in other languages, the programmer must explicitly allocate and free the memory.
+- Rust uses a third approach: `memory is managed through a system of ownership with a set of rules that the compiler checks at compile time.`
+
+## The Stack and the Heap
+
+### STACK
+
+- The stack stores values in the order it gets them and removes the values in the opposite order.: LIFO
+- All data stored on the stack must have a known, fixed size
+- pointer is a known, fixed size, you can store the pointer on the stack
+
+### HEAP
+
+- Data with an unknown size at compile time or a size that might change must be stored on the heap
+- you request a certain amount of space
+- marks it as being in use, and returns a pointer which is the address of that location (allocating on the heap)
