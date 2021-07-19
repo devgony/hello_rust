@@ -1,21 +1,19 @@
-fn first_word(s: &String) -> &str {
-    let bytes = s.as_bytes();
-
-    for (i, &item) in bytes.iter().enumerate() {
-        if item == b' ' {
-            return &s[0..i];
-        }
-    }
-
-    &s[..]
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
 }
 
 fn main() {
-    let mut s = String::from("hello world");
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
 
-    let word = first_word(&s);
-    
-    s.clear(); // error!
-    println!("the first word is: {}", word);
-
+    println!("rect1 is {:?}", rect1); // { width: 30, height: 50 }
+    println!("rect1 is {:#?}", rect1);
+    // {
+    //     width: 30,
+    //     height: 50,
+    // }
 }

@@ -848,3 +848,190 @@ fn main() {
     let word = first_word(my_string_literal);
 }
 ```
+
+# 5.1. Defining and Instantiating Structs
+
+- object + class
+
+```rs
+struct User {
+    username: String,
+    email: String,
+    sign_in_count: u64,
+    active: bool,
+}
+```
+
+## create an instance of that struct + mutation (entire instance must be mutable)
+
+```rs
+let mut user1 = User {
+    email: String::from("someone@example.com"),
+    username: String::from("someusername123"),
+    active: true,
+    sign_in_count: 1,
+};
+user1.email = String::from("anotheremail@example.com");
+```
+
+## Using the Field Init Shorthand having same name + return struct
+
+```rs
+fn build_user(email: String, username: String) -> User {
+    User {
+        email,
+        username,
+        active: true,
+        sign_in_count: 1,
+    }
+}
+```
+
+## Update Syntax (like spread operator)
+
+```rs
+let user2 = User {
+    email: String::from("another@example.com"),
+    username: String::from("anotherusername567"),
+    ..user1
+};
+```
+
+## Using Tuple Structs (without Named Fields to Create Different Types)
+
+```rs
+struct Color(i32, i32, i32);
+struct Point(i32, i32, i32);
+
+let black = Color(0, 0, 0);
+let origin = Point(0, 0, 0);
+```
+
+## Unit-Like Structs `strunct User()` => Ch.10 traits
+
+## Ownership of Struct Data
+
+### To use reference(&) in struct, we need to specify lifetime => Ch. 10
+
+```rs
+struct User {
+    username: &str,
+    email: &str,
+    sign_in_count: u64,
+    active: bool,
+}
+```
+
+### Let us use owner type like ``String::` for now.
+
+# 5.2. An Example Program Using Structs
+
+## Refactoring with Variables
+
+```rs
+fn main() {
+    let width1 = 30;
+    let height1 = 50;
+
+    println!(
+        "The area of the rectangle is {} square pixels.",
+        area(width1, height1)
+    );
+}
+
+fn area(width: u32, height: u32) -> u32 {
+    width * height
+}
+```
+
+## Refactoring with Tuples
+
+```rs
+fn main() {
+    let rect1 = (30, 50);
+
+    println!(
+        "The area of the rectangle is {} square pixels.",
+        area(rect1)
+    );
+}
+
+fn area(dimensions: (u32, u32)) -> u32 {
+    dimensions.0 * dimensions.1
+}
+
+```
+
+## Refactoring with Structs: Adding More Meaning
+
+### to use struct, pass immutable borrow(&)
+
+```rs
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!(
+        "The area of the rectangle is {} square pixels.",
+        area(&rect1)
+    );
+}
+
+fn area(rectangle: &Rectangle) -> u32 { // immutable borrow
+    rectangle.width * rectangle.height
+}
+```
+
+## Adding Useful Functionality with Derived Traits
+
+- `#[derive(Debug)]`: to use derive annotation, explicate it
+- `{:?}` is derive annotation
+- `{:#?}` shows struct with pretty format
+
+```rs
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!("rect1 is {:?}", rect1); // { width: 30, height: 50 }
+    println!("rect1 is {:#?}", rect1);
+    // {
+    //     width: 30,
+    //     height: 50,
+    // }
+}
+
+```
+
+# 5.3. Method Syntax
+
+## Defining Methods
+
+```rs
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }
+}
+```
