@@ -862,7 +862,7 @@ struct User {
 }
 ```
 
-## create an instance of that struct + mutation (entire instance must be mutable)
+## Create an instance of that struct + mutation (entire instance must be mutable)
 
 ```rs
 let mut user1 = User {
@@ -871,7 +871,7 @@ let mut user1 = User {
     active: true,
     sign_in_count: 1,
 };
-user1.email = String::from("anotheremail@example.com");
+user1.email = String::from("anotheremail@example.com"); // mutate
 ```
 
 ## Using the Field Init Shorthand having same name + return struct
@@ -879,8 +879,8 @@ user1.email = String::from("anotheremail@example.com");
 ```rs
 fn build_user(email: String, username: String) -> User {
     User {
-        email,
-        username,
+        email, // init with param
+        username, // init with param
         active: true,
         sign_in_count: 1,
     }
@@ -893,7 +893,7 @@ fn build_user(email: String, username: String) -> User {
 let user2 = User {
     email: String::from("another@example.com"),
     username: String::from("anotherusername567"),
-    ..user1
+    ..user1 // Struct Update Syntax
 };
 ```
 
@@ -907,7 +907,9 @@ let black = Color(0, 0, 0);
 let origin = Point(0, 0, 0);
 ```
 
-## Unit-Like Structs `strunct User()` => Ch.10 traits
+## Unit-Like Structs `struct User()` => Ch.10 traits
+
+- empty struct -> for trait
 
 ## Ownership of Struct Data
 
@@ -1020,6 +1022,10 @@ fn main() {
 
 # 5.3. Method Syntax
 
+- similar to fuinctions
+- but defined within the context of a struct (or an enum or a trait)
+- first param is always `self`: the instance of the struct the method is being called on
+
 ## Defining Methods
 
 ```rs
@@ -1030,8 +1036,101 @@ struct Rectangle {
 }
 
 impl Rectangle {
+    fn area(&self) -> u32 { // borrow ownership of immutable Rectangle
+    // &mut self to mutate
+        self.width * self.height
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!(
+        "The area of the rectangle is {} square pixels.",
+        rect1.area() // method syntax but rect1 as arg
+    );
+}
+```
+
+## automatic referencing and dereferencing
+
+```rs
+p1.distance(&p2);
+(&p1).distance(&p2);
+```
+
+## Methods with More Parameters
+
+```rs
+fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.height > other.height
+    }
+...
+println!("Can rect1 hold rect2? {}", rect1.can_hold(&rect2));
+println!("Can rect1 hold rect3? {}", rect1.can_hold(&rect3));
+```
+
+- immutable borrow to rect2 => keep ownership in main
+
+## Associated Functions
+
+- doesn't take `self` as a param
+- call by `::`
+- often used for constructors
+
+```rs
+impl Rectangle {
+    fn square(size: u32) -> Rectangle {
+        Rectangle {
+            width: size,
+            height: size,
+        }
+    }
+}
+let sq = Rectangle::square(3);
+```
+
+## Multiple impl Blocks
+
+- able to separate impl block
+
+```rs
+impl Rectangle {
     fn area(&self) -> u32 {
         self.width * self.height
     }
 }
+
+impl Rectangle {
+    fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.height > other.height
+    }
+}
+```
+
+- struct is not the only way to create custom type => enum!
+
+# 6.1. Defining an Enum
+
+- enum values can only be one of its variants
+- also custom data type
+
+```rs
+enum IpAddrKind { // define enum
+    V4,
+    V6,
+}
+
+fn main() {
+    let four = IpAddrKind::V4; // call enum
+    let six = IpAddrKind::V6;
+
+    route(IpAddrKind::V4);
+    route(IpAddrKind::V6);
+}
+
+fn route(ip_kind: IpAddrKind) {}
 ```
