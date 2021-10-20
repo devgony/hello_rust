@@ -924,7 +924,7 @@ struct User {
 }
 ```
 
-### Let us use owner type like ``String::` for now.
+### Let us use owned type like `String::` for now.
 
 # 5.2. An Example Program Using Structs
 
@@ -1117,6 +1117,7 @@ impl Rectangle {
 
 - enum values can only be one of its variants
 - also custom data type
+- each variant can have different types
 
 ```rs
 enum IpAddrKind { // define enum
@@ -1133,4 +1134,84 @@ fn main() {
 }
 
 fn route(ip_kind: IpAddrKind) {}
+
+// use different variants
+enum IpAddr {
+    V4(u8, u8, u8, u8),
+    V6(String),
+}
+let home = IpAddr::V4(127, 0, 0, 1);
+let loopback = IpAddr::V6(String::from("::1"));
+```
+
+## Define methods on enum with `impl` like struct
+
+```rs
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 }, // anonymous struct
+    Write(String),
+    ChangeColor(i32, i32, i32),
+}
+impl Message {
+    fn call(&self) {
+        // method body would be defined here
+    }
+}
+
+let m = Message::Write(String::from("hello"));
+m.call();
+```
+
+## The Option Enum and Its Advantages Over Null Values
+
+- A value could be something or it could be nothing
+- Rust does not have nulls, but it does have an enum that can encode the concept of a value being present or absent
+- included in the prelude; you don’t need to bring it into scope explicitly
+
+```rs
+enum Option<T> {
+    None,
+    Some(T),
+}
+```
+
+### Generic <T>
+
+- `Some` variant of the `Option` enum can hold one piece of data of any type
+- If we use None rather than Some, we need to tell Rust what type of Option<T>
+
+```rs
+let some_number = Some(5);
+let some_string = Some("a string");
+let absent_number: Option<i32> = None;
+```
+
+## How do you get the T value out of a Some variant?
+
+1. match
+2. unwrap_or, unwrap_or_else, or unwrap_or_default
+
+# 6.2 The match Control Flow Operator
+
+- A coin-sorting machine
+
+```rs
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter,
+}
+
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        // arms
+        // pattern => {code block} or return value
+        Coin::Penny => 1,
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter => 25,
+    }
+}
 ```
