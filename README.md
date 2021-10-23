@@ -1194,7 +1194,11 @@ let absent_number: Option<i32> = None;
 
 # 6.2 The match Control Flow Operator
 
+## Match?
+
 - A coin-sorting machine
+- `if expression` needs to return a Boolean but `match expression` can be any type.
+- single line: just return `=>`, multi line: curly bracket
 
 ```rs
 enum Coin {
@@ -1214,4 +1218,79 @@ fn value_in_cents(coin: Coin) -> u8 {
         Coin::Quarter => 25,
     }
 }
+```
+
+## Patterns that Bind to Values
+
+- can bind to the parts of the values for enum variant
+
+```rs
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => 1,
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter(state) => {
+            println!("State quarter from {:?}!", state);
+            25
+        }
+    }
+}
+```
+
+## Matching with Option<T>
+
+```rs
+  fn plus_one(x: Option<i32>) -> Option<i32> {
+        match x {
+            None => None,
+            Some(i) => Some(i + 1),
+        }
+    }
+
+    let five = Some(5);
+    let six = plus_one(five);
+    let none = plus_one(None);
+```
+
+## Matches Are Exhaustive
+
+- we must exhaust every last possibility in order for the code to be valid
+
+## The \_ Placeholder
+
+- the `_` will match all the possible cases that aren’t specified before it.
+
+```rs
+let some_u8_value = 0u8;
+    match some_u8_value {
+        1 => println!("one"),
+        3 => println!("three"),
+        5 => println!("five"),
+        7 => println!("seven"),
+        _ => (), // unit value, nothing happen here
+    }
+```
+
+## Concise Control Flow with if let
+
+- the match expression can be a bit wordy in a situation in which we care about `only one of the cases`
+
+### match-exhaustive
+
+```rs
+ let config_max = Some(3u8);
+    match config_max {
+        Some(max) => println!("The maximum is configured to be {}", max),
+        _ => (),
+    }
+```
+
+### if let-conciseness
+
+```rs
+    let config_max = Some(3u8);
+    if let Some(max) = config_max {
+        println!("The maximum is configured to be {}", max);
+    }
 ```
