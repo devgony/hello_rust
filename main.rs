@@ -1,19 +1,10 @@
-#[derive(Debug)]
-struct Rectangle {
-    width: u32,
-    height: u32,
-}
-
 fn main() {
-    let rect1 = Rectangle {
-        width: 30,
-        height: 50,
-    };
+    use std::collections::HashMap;
 
-    println!("rect1 is {:?}", rect1); // { width: 30, height: 50 }
-    println!("rect1 is {:#?}", rect1);
-    // {
-    //     width: 30,
-    //     height: 50,
-    // }
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Blue"), 25);
+
+    println!("{:?}", scores);
 }

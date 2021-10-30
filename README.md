@@ -1272,11 +1272,11 @@ let some_u8_value = 0u8;
     }
 ```
 
-## Concise Control Flow with if let
+# 6.3 Concise Control Flow with if let
 
 - the match expression can be a bit wordy in a situation in which we care about `only one of the cases`
 
-### match-exhaustive
+## match-exhaustive
 
 ```rs
  let config_max = Some(3u8);
@@ -1286,11 +1286,634 @@ let some_u8_value = 0u8;
     }
 ```
 
-### if let-conciseness
+## if let-conciseness
 
 ```rs
     let config_max = Some(3u8);
     if let Some(max) = config_max {
         println!("The maximum is configured to be {}", max);
     }
+```
+
+# 7.1. Packages and Crates
+
+- Packages: A Cargo feature that lets you build, test, and share crates
+- Crates: A tree of modules that produces a library or executable
+  - Crate roots: `src/main.rs` and `src/lib.rs`
+- Modules and use: Let you control the organization, scope, and privacy of paths
+- Paths: A way of naming an item, such as a struct, function, or module
+
+## Create new project
+
+```sh
+cargo new my-project
+     Created binary (application) `my-project` package
+ls my-project
+    Cargo.toml
+    src
+ls my-project/src
+    main.rs
+```
+
+# 7.2 Defining Modules to Control Scope and Privacy
+
+## Create a new library: named restaurant industry
+
+```sh
+cargo new --lib restaurant
+```
+
+```rs
+// restaurant/src/lib.rs
+mod front_of_house {
+    mod hosting {
+        fn add_to_waitlist() {}
+        fn seat_at_table() {}
+    }
+    mod serving {
+        fn take_order() {}
+        fn serve_order() {}
+        fn take_payment() {}
+    }
+}
+```
+
+### Module tree
+
+```
+crate
+ └── front_of_house
+     ├── hosting
+     │   ├── add_to_waitlist
+     │   └── seat_at_table
+     └── serving
+         ├── take_order
+         ├── serve_order
+         └── take_payment
+```
+
+# 7.3. Paths for Referring to an Item in the Module Tree
+
+## Two Forms separated by double colons (::)
+
+1. An absolute path starts from a crate root by using a crate name or a literal `crate`.
+2. A relative path starts from the current module and uses `self`, `super`, or an `identifier` in the current module.
+
+```rs
+mod front_of_house {
+    mod hosting { // error[E0603]: module `hosting` is private
+        fn add_to_waitlist() {}
+    }
+}
+pub fn eat_at_restaurant() {
+    // Absolute path
+    crate::front_of_house::hosting::add_to_waitlist();
+    // Relative path
+    front_of_house::hosting::add_to_waitlist();
+}
+```
+
+## Exposing Paths with the `pub` Keyword
+
+- All functions, methods, structs, enums, modules, and constants are private by default
+- Items in a parent module can't use the private items inside child modules.
+- Child can use ancestors'
+
+```rs
+mod front_of_house {
+    pub mod hosting { // make module public
+        pub fn add_to_waitlist() {} // make function public
+    }
+}
+pub fn eat_at_restaurant() {
+    // Absolute path
+    crate::front_of_house::hosting::add_to_waitlist();
+    // Relative path
+    front_of_house::hosting::add_to_waitlist();
+}
+```
+
+- `front_of_house`?: cuz `eat_at_restaurant` is defined in the `same module`, we can refer to it
+
+## Starting Relative Paths with `super`
+
+```rs
+fn serve_order() {} // don't need pub?
+
+mod back_of_house {
+    fn fix_incorrect_order() {
+        cook_order();
+        super::serve_order(); // super = crate root
+    }
+    fn cook_order() {}
+}
+```
+
+## Making Structs and Enums Public
+
+### pub struct
+
+- `pub` sturct + each fields should be with explicit `pub`
+- To set or construct private field, we can use public associated function
+
+```rs
+mod back_of_house {
+    pub struct Breakfast {
+        pub toast: String,
+        seasonal_fruit: String,
+    }
+
+    impl Breakfast {
+        // if struct has private filed, we need public associated function as a setter
+        pub fn summer(toast: &str) -> Breakfast {
+            Breakfast {
+                toast: String::from(toast),
+                seasonal_fruit: String::from("peaches"),
+            }
+        }
+    }
+}
+
+pub fn eat_at_restaurant() {
+    // Order a breakfast in the summer with Rye toast
+    let mut meal = back_of_house::Breakfast::summer("Rye");
+    // Change our mind about what bread we'd like
+    meal.toast = String::from("Wheat");
+    println!("I'd like {} toast please", meal.toast);
+
+    // The next line won't compile if we uncomment it; we're not allowed
+    // to see or modify the seasonal fruit that comes with the meal
+    // meal.seasonal_fruit = String::from("blueberries");
+}
+```
+
+### pub enum
+
+- `pub` enum's variants are `public by default`
+
+```rs
+mod back_of_house {
+    pub enum Appetizer {
+        Soup,
+        Salad,
+    }
+}
+
+pub fn eat_at_restaurant() {
+    let order1 = back_of_house::Appetizer::Soup;
+    let order2 = back_of_house::Appetizer::Salad;
+}
+```
+
+# 7.4. Bringing Paths Into Scope with the use Keyword
+
+1. crate root way
+2. relative way
+
+```rs
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+use crate::front_of_house::hosting; // or
+// use self::front_of_house::hosting;
+
+pub fn eat_at_restaurant() {
+    hosting::add_to_waitlist();
+}
+```
+
+## Creating Idiomatic use Paths
+
+- `function`: bring into scope by parent
+- `enum`, struct: bring into scope itself
+- `same name` into scope: should be brought by parent
+  - or use as Keywork
+
+## Providing New Names with the as Keyword
+
+```rs
+use std::fmt::Result;
+use std::io::Result as IoResult;
+
+fn function1() -> Result {
+    // --snip--
+}
+
+fn function2() -> IoResult<()> {
+    // --snip--
+}
+```
+
+## Re-exporting Names with pub use
+
+- When we bring a name into scope with the `use` keyword, the name available in the new scope is private => `pub use`!
+
+```rs
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+pub use crate::front_of_house::hosting;
+
+pub fn eat_at_restaurant() {
+    hosting::add_to_waitlist();
+}
+```
+
+## Using External Packages
+
+```rs
+// Cargo.toml
+rand = "0.8.3"
+
+// main.rs
+use rand::Rng;
+
+fn main() {
+    let secret_number = rand::thread_rng().gen_range(1..101);
+}
+```
+
+## Using Nested Paths to Clean Up Large use Lists
+
+```rs
+use std::{cmp::Ordering, io};
+use std::io::{self, Write};
+```
+
+## The Glob Operator
+
+```rs
+use std::collections::*;
+```
+
+# 7.5 Separating Modules into Different Files
+
+- `mod [moduleName];` : load module from file
+
+```rs
+// src/lib.rs
+mod front_of_house; // ';' => load the contents of the module from another file with same name
+
+pub use crate::front_of_house::hosting;
+
+pub fn eat_at_restaurant() {
+    hosting::add_to_waitlist();
+    hosting::add_to_waitlist();
+    hosting::add_to_waitlist();
+}
+```
+
+- 1-layer file
+
+  ```rs
+  // src/front_of_house.rs
+  pub mod hosting {
+      pub fn add_to_waitlist() {}
+  }
+  ```
+
+- 2-layer file
+
+  ```rs
+  // src/front_of_house.rs
+  pub mod hosting;
+
+  // src/front_of_house/hosting.rs
+  pub fn add_to_waitlist() {}
+  ```
+
+# 8.1. Storing Lists of Values with Vectors
+
+## Creating a New Vector
+
+- by `Vec::new function`
+
+```rs
+let v: Vec<i32> = Vec::new();
+```
+
+- by `vec! macro`
+
+```rs
+let v = vec![1, 2, 3];
+```
+
+## Updating a Vector
+
+- Vector should be `mut`
+
+```rs
+let mut v = Vec::new();
+v.push(5);
+```
+
+## Dropping a Vector Drops Its Elements
+
+- When the vector gets dropped, all of its contents are also dropped
+
+```rs
+fn main() {
+    {
+        let v = vec![1, 2, 3, 4];
+        // do stuff with v
+    } // <- v goes out of scope and is freed here
+}
+```
+
+## Reading Elements of Vectors
+
+1. v[i] way
+
+```rs
+let v = vec![1, 2, 3, 4, 5];
+let third: &i32 = &v[2];
+println!("The third element is {}", third);
+```
+
+2. v.get(i) way - safer for invalid index
+
+```rs
+match v.get(2) {
+    Some(third) => println!("The third element is {}", third),
+    None => println!("There is no third element."),
+}
+```
+
+### Can’t have mutable and immutable references in the same scope
+
+- adding a new element onto the end of the vector might require allocating new memory and copying the old elements to the new space
+
+```rs
+let mut v = vec![1, 2, 3, 4, 5];
+let first = &v[0];
+v.push(6);
+println!("The first element is: {}", first);
+```
+
+## Iterating over the Values in a Vector
+
+- for loop to get immutable references
+
+```rs
+    let v = vec![100, 32, 57];
+    for i in &v {
+        println!("{}", i);
+    }
+```
+
+- mutable
+
+```rs
+    let mut v = vec![100, 32, 57];
+    for i in &mut v {
+        *i += 50;
+    }
+```
+
+## Using an Enum to Store Multiple Types
+
+- vectors can only store values that are the same type => use `Enum`
+
+```rs
+enum SpreadsheetCell {
+    Int(i32),
+    Float(f64),
+    Text(String),
+}
+
+let row = vec![
+    SpreadsheetCell::Int(3),
+    SpreadsheetCell::Text(String::from("blue")),
+    SpreadsheetCell::Float(10.12),
+];
+```
+
+# 8.2. Storing UTF-8 Encoded Text with Strings
+
+- UTF-8 encoded
+- Two string types in Rust
+  1. Core language => &str (string slice)
+  2. Std lib => String
+
+## Creating a New String
+
+- string is also one of vector type
+
+```rs
+let mut s = String::new();
+```
+
+- literal directly
+
+```rs
+let s = "initial contents".to_string();
+let s = String::from("initial contents");
+```
+
+## Updating a String
+
+### Appending to a String with push_str and push
+
+```rs
+let mut s = String::from("foo");
+s.push_str("bar"); // string slice
+s.push('l'); // single char
+```
+
+### Concatenation with the + Operator or the format! Macro
+
+```rs
+let s1 = String::from("Hello, ");
+let s2 = String::from("world!");
+let s3 = s1 + &s2; // note s1 has been moved here and can no longer be used
+```
+
+- coerce the &String argument into &str
+- deref coercion `&s2` => &s2[..]
+- take ownership of `s1`
+- appends a copy of the `s2`
+- returns ownershop of the result.
+
+### `format!`: templete-literal String
+
+```rs
+let s1 = String::from("tic");
+let s2 = String::from("tac");
+let s3 = String::from("toe");
+let s = format!("{}-{}-{}", s1, s2, s3);
+```
+
+## Indexing into Strings
+
+- can't access with index
+
+### Internal Representation
+
+- A String is a wrapper over a `Vec<u8>`
+
+## Slicing Strings
+
+- [] with a range to create a string slice => possible
+- if range is at the middle of byte => panic
+
+```rs
+let hello = "Здравствуйте";
+let s = &hello[0..4];
+```
+
+## Methods for Iterating Over Strings
+
+```rs
+for c in "नमस्ते".chars() {
+    println!("{}", c);
+}
+```
+
+# 8.3. Storing Keys with Associated Values in Hash Maps
+
+## Creating a New Hash Map
+
+```rs
+use std::collections::HashMap;
+let mut scores = HashMap::new();
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Yellow"), 50);
+```
+
+- homogeneous: all of the keys must have the same type, and all of the values must have the same type
+
+### Create Hash map from vectors
+
+```rs
+use std::collections::HashMap;
+let teams = vec![String::from("Blue"), String::from("Yellow")];
+let initial_scores = vec![10, 50];
+let mut scores: HashMap<_, _> = // infer <String, i32>
+    teams.into_iter().zip(initial_scores.into_iter()).collect();
+```
+
+## Hash Maps and Ownership
+
+- `types` that implement the `Copy trait`, like `i32` are copied into the hash map
+- `owned value` like `String` moves, the hash map will be the owner
+
+```rs
+use std::collections::HashMap;
+
+let field_name = String::from("Favorite color");
+let field_value = String::from("Blue");
+
+let mut map = HashMap::new();
+map.insert(field_name, field_value);
+// field_name and field_value are invalid at this point
+```
+
+## Accessing Values in a Hash Map
+
+1. `Hashmap.get()`
+2. `for (key, value) in &Hashmap {}`
+
+```rs
+use std::collections::HashMap;
+let mut scores = HashMap::new();
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Yellow"), 50);
+let team_name = String::from("Blue");
+
+let score = scores.get(&team_name);
+
+for (key, value) in &scores {
+    println!("{}: {}", key, value);
+}
+```
+
+## Updating a Hash Map
+
+### Overwriting a Value
+
+```rs
+use std::collections::HashMap;
+let mut scores = HashMap::new();
+
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Blue"), 25);
+println!("{:?}", scores); // {"Blue": 25}
+```
+
+### Only Inserting a Value If the Key Has No Value
+
+#### `or_insert`:
+
+##### if exists:
+
+- returns a mutable reference to the previous value
+
+##### else:
+
+- inserts the parameter
+- returns a mutable reference to the new value
+
+```rs
+    use std::collections::HashMap;
+    let mut scores = HashMap::new();
+    scores.insert(String::from("Blue"), 10);
+
+    scores.entry(String::from("Yellow")).or_insert(50);
+    scores.entry(String::from("Blue")).or_insert(50);
+    println!("{:?}", scores); // {"Blue": 10, "Yellow": 50}
+```
+
+## Updating a Value Based on the Old Value
+
+```rs
+use std::collections::HashMap;
+let text = "hello world wonderful world";
+let mut map = HashMap::new();
+for word in text.split_whitespace() {
+    let count = map.entry(word).or_insert(0);
+    *count += 1;
+}
+println!("{:?}", map);
+```
+
+## Hashing Functions
+
+- SipHash: default function, higher safety
+- switch to another function => use `BuildHasher` trait
+
+# 9.1. Unrecoverable Errors with panic!
+
+- recoverable => `Result<T, E>`
+  - file not found
+- unrecoverable => `panic!`
+  - bugs like trying to access a location beyond the end of an array
+
+## panic!
+
+- print a failure message
+- unwind and clean up the stack
+- quit
+
+### Unwinding the Stack or Aborting in Response to a Panic
+
+- switch from unwind to abort => smaller binary
+
+```rs
+// Cargo.toml
+[profile.release]
+panic = 'abort'
+```
+
+## Using a panic! Backtrace
+
+- trace panic! from a library or our code
+
+```sh
+$ RUST_BACKTRACE=1 cargo run
 ```
