@@ -59,7 +59,7 @@ cargo check // check compilable but doesn't product an executable
 cargo build --release
 ```
 
-# ch02.Guessing game
+# 2.1. Guessing game
 
 ## A crate is a collection of Rust source code files
 
@@ -909,6 +909,12 @@ let origin = Point(0, 0, 0);
 
 ## Unit-Like Structs `struct User()` => Ch.10 traits
 
+```rs
+struct AlwaysEqual;
+let subject = AlwaysEqual;
+```
+
+- when don't have any data that you want to sotre in the type itself.
 - empty struct -> for trait
 
 ## Ownership of Struct Data
@@ -1917,3 +1923,68 @@ panic = 'abort'
 ```sh
 $ RUST_BACKTRACE=1 cargo run
 ```
+
+# 9.2 Recoverable Errors with Result
+
+- Most errors aren’t serious enough to require the program to stop entirely
+
+```rs
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+## Matching on Different Errors
+
+### With match pattern
+
+```rs
+use std::fs::File;
+use std::io::ErrorKind;
+
+fn main() {
+    let f = File::open("hello.txt");
+
+    let f = match f {
+        Ok(file) => file,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => match File::create("hello.txt") {
+                Ok(fc) => fc,
+                Err(e) => panic!("Problem creating the file: {:?}", e),
+            },
+            other_error => {
+                panic!("Problem opening the file: {:?}", other_error)
+            }
+        },
+    };
+}
+```
+
+### With closure
+
+```rs
+use std::fs::File;
+use std::io::ErrorKind;
+
+fn main() {
+    let f = File::open("hello.txt").unwrap_or_else(|error| {
+        if error.kind() == ErrorKind::NotFound {
+            File::create("hello.txt").unwrap_or_else(|error| {
+                panic!("Problem creating the file: {:?}", error);
+            })
+        } else {
+            panic!("Problem opening the file: {:?}", error);
+        }
+    });
+}
+```
+
+### Shortcuts for Panic on Error: unwrap and expect
+
+```rs
+let f = File::open("hello.txt").unwrap(); // just panic!()
+let f = File::open("hello.txt").expect("Failed to open hello.txt"); // panic!("with message")
+```
+
+### Propagating Errors
