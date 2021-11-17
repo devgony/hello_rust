@@ -1987,4 +1987,129 @@ let f = File::open("hello.txt").unwrap(); // just panic!()
 let f = File::open("hello.txt").expect("Failed to open hello.txt"); // panic!("with message")
 ```
 
-### Propagating Errors
+## Propagating Errors
+
+```rs
+#![allow(unused)]
+fn main() {
+use std::fs::File;
+use std::io::{self, Read};
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let f = File::open("hello.txt");
+
+    let mut f = match f {
+        Ok(file) => file,
+        Err(e) => return Err(e), // io:Error
+    };
+
+    let mut s = String::new();
+
+    match f.read_to_string(&mut s) {
+        Ok(_) => Ok(s),
+        Err(e) => Err(e), // io::Error
+    }
+}
+}
+```
+
+### A Shortcut for Propagating Errors: the ? Operator
+
+- similar operation with match but,,
+- ? operator calls the `from` function, the error type received is converted into the error type defined in the return type of the current function
+
+```rs
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut f = File::open("hello.txt")?;
+    let mut s = String::new();
+    f.read_to_string(&mut s)?;
+    Ok(s)
+}
+```
+
+- could even shorten
+
+```rs
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut s = String::new();
+
+    File::open("hello.txt")?.read_to_string(&mut s)?;
+
+    Ok(s)
+}
+```
+
+- more shorten
+
+```rs
+fn read_username_from_file() -> Result<String, io::Error> {
+    fs::read_to_string("hello.txt") // implemented same way inside
+}
+```
+
+### The ? Operator Can Be Used in Functions That Return Result
+
+- should return `Result` or `Option` or `std::ops::Try`
+- To use `?`,
+  1. Define return type `Result<T, E>`
+  2. One of the Result<T, E> methods - unwrap_or...
+  3. Match
+- main should return `()` or `Result<T, E>`
+
+```rs
+fn main() -> Result<(), Box<dyn Error>> { // can define Any error
+    let f = File::open("hello.txt")?;
+
+    Ok(())
+}
+```
+
+# 9.3. To panic! or Not to panic!
+
+## Examples, Prototype Code, and Tests
+
+- Example should be concise
+- Prototype should be fast
+- Whole Test should be failed when assertion got false
+
+## Cases in Which You Have More Information Than the Compiler
+
+- Use unwrap when you think logiaclly it will never get failure
+
+## Guidelines for Error Handling
+
+- good for panic!
+  - If someone passes values that don't make sense
+  - Using external library able to return invalid state
+- But better to return `Result` first then `panic!`
+
+## Creating Custom Types for Validation
+
+- Typing is better than error handling
+
+  - If use type, we don't need to parse Option, just compile or fail
+  - If use `u32`, no need to handle negative case
+
+- eg) For repeative type checker
+
+```rs
+pub struct Guess {
+    value: i32,
+}
+
+impl Guess {
+    pub fn new(value: i32) -> Guess {
+        if value < 1 || value > 100 {
+            panic!("Guess value must be between 1 and 100, got {}.", value);
+        }
+
+        Guess { value }
+    }
+
+    pub fn value(&self) -> i32 { // getter to get private value from outside the module
+        self.value
+    }
+}
+```
+
+# 10.1. Generic Data Types
