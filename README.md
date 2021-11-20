@@ -2057,6 +2057,9 @@ fn read_username_from_file() -> Result<String, io::Error> {
 - main should return `()` or `Result<T, E>`
 
 ```rs
+use std::error::Error;
+use std::fs::File;
+
 fn main() -> Result<(), Box<dyn Error>> { // can define Any error
     let f = File::open("hello.txt")?;
 
