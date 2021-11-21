@@ -2116,3 +2116,142 @@ impl Guess {
 ```
 
 # 10.1. Generic Data Types
+
+- `Generic`: abstract stand-ins for concrete types or other properties
+- Preview
+  1. review how to extract a function to reduce code duplication
+  2. use the same technique to make a generic function from two functions that differ only in the types of their parameters
+  3. how to use generic types in struct and enum definitions.
+  4. how to use traits to define behavior in a generic way
+  5. lifetimes, a variety of generics that give the compiler information about how references relate to each other
+
+## Removing Duplication by Extracting a Function
+
+```rs
+fn largest(list: &[i32]) -> i32 {
+    let mut largest = list[0];
+
+    for &item in list {
+        if item > largest {
+            largest = item;
+        }
+    }
+
+    largest
+}
+
+fn main() {
+    let number_list = vec![34, 50, 25, 100, 65];
+
+    let result = largest(&number_list);
+    println!("The largest number is {}", result);
+
+    let number_list = vec![102, 34, 6000, 89, 54, 2, 43, 8];
+
+    let result = largest(&number_list);
+    println!("The largest number is {}", result);
+}
+```
+
+1. Identify duplicate code.
+2. Extract the duplicate code into the body of the function and specify the inputs and return values of that code in the function signature.
+3. Update the two instances of duplicated code to call the function instead.
+
+## In Function Definitions
+
+- the function `largest` is `generic` over some type `T`
+- but does not work yet?
+
+```rs
+fn largest<T>(list: &[T]) -> T {
+    let mut largest = list[0];
+
+    for &item in list {
+        if item > largest {
+            largest = item;
+        }
+    }
+
+    largest
+}
+
+fn main() {
+    let number_list = vec![34, 50, 25, 100, 65];
+
+    let result = largest(&number_list);
+    println!("The largest number is {}", result);
+
+    let char_list = vec!['y', 'm', 'a', 'q'];
+
+    let result = largest(&char_list);
+    println!("The largest char is {}", result);
+}
+```
+
+## In Struct Definitions
+
+```rs
+struct Point<T, U> {
+    x: T,
+    y: U,
+}
+
+fn main() {
+    let both_integer = Point { x: 5, y: 10 };
+    let both_float = Point { x: 1.0, y: 4.0 };
+    let integer_and_float = Point { x: 5, y: 4.0 };
+}
+```
+
+- `Point` is a generic over types T and U where x is of type T and y is of type U.
+- Can use many generic type parameters but => needs restructuring into smaller pieces.
+
+## In Enum Definitions
+
+```rs
+enum Option<T> {
+    Some(T),
+    None,
+}
+```
+
+```rs
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+## In Method Definitions
+
+- `impl` can be with either methods only on concrete type or generic type
+- methods way will impl the method on specific type only.
+
+```rs
+struct Point<T, U> {
+    x: T,
+    y: U,
+}
+
+impl<T, U> Point<T, U> { // T, U for struct
+    fn mixup<V, W>(self, other: Point<V, W>) -> Point<T, W> { // V, W for method
+        Point {
+            x: self.x,
+            y: other.y,
+        }
+    }
+}
+
+fn main() {
+    let p1 = Point { x: 5, y: 10.4 };
+    let p2 = Point { x: "Hello", y: 'c' };
+
+    let p3 = p1.mixup(p2);
+
+    println!("p3.x = {}, p3.y = {}", p3.x, p3.y);
+}
+```
+
+## Performance of Code Using Generics
+
+- Rust compiles generic code into code that specifies the type in each instance, we pay no runtime cost for using generics
