@@ -2160,7 +2160,7 @@ fn main() {
 ## In Function Definitions
 
 - the function `largest` is `generic` over some type `T`
-- but does not work yet?
+- but does not work yet? => need to bound cmp trait
 
 ```rs
 fn largest<T>(list: &[T]) -> T {
@@ -2255,3 +2255,361 @@ fn main() {
 ## Performance of Code Using Generics
 
 - Rust compiles generic code into code that specifies the type in each instance, we pay no runtime cost for using generics
+
+# 10.2. Traits: Defining Shared Behavior
+
+- A trait tells the Rust compiler about functionality a particular type has and can share with other types
+- similar with `interface` of other languages.
+
+## Defining a Trait
+
+- Trait definitions are a way to group method signatures together to define a set of behaviors necessary to accomplish some purpose
+
+```rs
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+```
+
+## Implementing a Trait on a Type
+
+- syntax
+
+```rs
+pub trait TraitName {
+    fn FunctionName(&self) -> T
+}
+
+impl TraitName for TypeName {
+    fn FunctionName(&self) -> T {
+        ...
+    }
+}
+```
+
+- example
+
+```rs
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+
+pub struct NewsArticle {
+    pub headline: String,
+    pub location: String,
+    pub author: String,
+    pub content: String,
+}
+
+impl Summary for NewsArticle {
+    fn summarize(&self) -> String {
+        format!("{}, by {} ({})", self.headline, self.author, self.location)
+    }
+}
+
+pub struct Tweet {
+    pub username: String,
+    pub content: String,
+    pub reply: bool,
+    pub retweet: bool,
+}
+
+impl Summary for Tweet {
+    fn summarize(&self) -> String {
+        format!("{}: {}", self.username, self.content)
+    }
+}
+```
+
+- Summary for NewsArticle and Tweet
+- can implement a trait on a type only if eitehr the trait or the type is local to our crate
+
+## Default Implementations
+
+- default: define and implementation at the same time instead of empty impl block
+
+```rs
+pub trait Summary {
+    fn summarize(&self) -> String {
+        String::from("(Read more...)")
+    }
+}
+```
+
+- default + custom impl: custom should be implemented
+
+```rs
+pub trait Summary {
+    fn summarize_author(&self) -> String;
+
+    fn summarize(&self) -> String {
+        format!("(Read more from {}...)", self.summarize_author())
+    }
+}
+
+impl Summary for Tweet {
+    fn summarize_author(&self) -> String {
+        format!("@{}", self.username)
+    }
+}
+```
+
+## Traits as Parameters
+
+```rs
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+
+## Trait Bound Syntax
+
+- verbose version of Traits as Parameters
+- good for multiple params with same trait
+
+```rs
+pub fn notify<T: Summary>(item1: &T, item2: &T) {
+    ...
+}
+```
+
+## Specifying Multiple Trait Bounds with the + Syntax
+
+```rs
+pub fn notify(item: &(impl Summary + Display)) {
+```
+
+```rs
+pub fn notify<T: Summary + Display>(item: &T) {
+```
+
+## Clearer Trait Bounds with where Clauses
+
+```rs
+fn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {
+```
+
+```rs
+fn some_function<T, U>(t: &T, u: &U) -> i32
+    where T: Display + Clone,
+          U: Clone + Debug
+{
+```
+
+## Returning Types that Implement Traits
+
+```rs
+fn returns_summarizable() -> impl Summary {
+    Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from(
+            "of course, as you probably already know, people",
+        ),
+        reply: false,
+        retweet: false,
+    }
+}
+```
+
+- good for closures and iterators
+- can return only a single type
+
+## Fixing the largest Function with Trait Bounds
+
+- To compare: bound `PartialOrd` trait for T
+- Cannot move out of type [T], a non-copy slice => bound `Copy`
+
+```rs
+fn largest<T: PartialOrd + Copy>(list: &[T]) -> T {
+    let mut largest = list[0];
+
+    for &item in list {
+        if item > largest {
+            largest = item;
+        }
+    }
+
+    largest
+}
+
+fn main() {
+    let number_list = vec![34, 50, 25, 100, 65];
+
+    let result = largest(&number_list);
+    println!("The largest number is {}", result);
+
+    let char_list = vec!['y', 'm', 'a', 'q'];
+
+    let result = largest(&char_list);
+    println!("The largest char is {}", result);
+}
+```
+
+### Homework: instead of bounding Copy trait, change return type with &T => solve lifetiem problem
+
+## Using Trait Bounds to Conditionally Implement Methods
+
+```rs
+use std::fmt::Display;
+
+struct Pair<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Pair<T> { // always impl
+    fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
+
+impl<T: Display + PartialOrd> Pair<T> { // impl only it has Display and PartialOrdt trait
+    fn cmp_display(&self) {
+        if self.x >= self.y {
+            println!("The largest member is x = {}", self.x);
+        } else {
+            println!("The largest member is y = {}", self.y);
+        }
+    }
+}
+```
+
+### Blanket implementation
+
+- go to implementors section for details
+- impl for every type T having Display
+
+```rs
+impl<T: Display> ToString for T {
+    // --snip--
+}
+```
+
+# 10.3. Validating References with Lifetimes
+
+- Every reference has a lifetime; the scope for which that reference is valid
+- Use when the lifetimes of references could be related in a few different ways.
+
+## Preventing Dangling References with Lifetimes
+
+## The Borrow Checker
+
+```rs
+fn main() {
+    {
+        let r;                // ---------+-- 'a
+                              //          |
+        {                     //          |
+            let x = 5;        // -+-- 'b  |
+            r = &x;           //  |       |
+        }                     // -+       |
+                              //          |
+        println!("r: {}", r); //          |
+    }                         // ---------+
+}
+```
+
+- `'b` is shorter than `'a`: the subject of the reference doesn't live as long as the reference
+
+```rs
+    {
+        let x = 5;            // ----------+-- 'b
+                              //           |
+        let r = &x;           // --+-- 'a  |
+                              //   |       |
+        println!("r: {}", r); //   |       |
+                              // --+       |
+    }                         // ----------+
+```
+
+- `r` will always be valid while `x` is valid
+
+## Generic Lifetimes in Functions
+
+```rs
+fn main() {
+    let string1 = String::from("abcd");
+    let string2 = "xyz";
+
+    let result = longest(string1.as_str(), string2);
+    println!("The longest string is {}", result);
+}
+
+fn longest(x: &str, y: &str) -> &str { // expected named lifetime parameter
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+## Lifetime Annotation Syntax
+
+- Lifetime annotations describe the relationships of the lifetimes of multiple references to each other without affecting the lifetimes.
+
+```rs
+&i32        // a reference
+&'a i32     // a reference with an explicit lifetime
+&'a mut i32 // a mutable reference with an explicit lifetime
+```
+
+## Lifetime Annotations in Function Signatures
+
+- Lifetimes are constraints:
+  - Reject any values that don't adhere to these constraints
+- Doesn't need to know exatly how long `x` and `y` will live, only that some scope can be substituted for `'a`
+- Lifetimes might be different each time the function is called => need to annotate manually
+
+```rs
+fn main() {
+    let string1 = String::from("abcd");
+    let string2 = "xyz";
+
+    let result = longest(string1.as_str(), string2);
+    println!("The longest string is {}", result);
+}
+
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+- the generic lifetime `'a` will get the concrete lifetime that is equal to the smaller of the lifetimes of `x` and `y`
+
+```rs
+fn main() {
+    let string1 = String::from("long string is long");
+    let result;
+    {
+        let string2 = String::from("xyz");
+        result = longest(string1.as_str(), string2.as_str()); // borrowed value does not live long enough
+    }
+    println!("The longest string is {}", result); // borrow later used here
+}
+```
+
+## Thinking in Terms of Lifetimes
+
+```rs
+fn longest<'a>(x: &'a str, y: &str) -> &'a str {
+    x
+}
+```
+
+- `y` does not have any relationship with the lifetime of `x` or `return value`
+- If `return type` is `reference`, it needs to match the lifetime param for `one of the params`.
+- Else, it must refer to a value created within this function, which would be a `Dangling reference`
+
+```rs
+fn longest<'a>(x: &str, y: &str) -> &'a str {
+    let result = String::from("really long string");
+    result.as_str() // returns a value referencing data owned by the current function
+}
+```
+
+## Lifetime Annotations in Struct Definitions
