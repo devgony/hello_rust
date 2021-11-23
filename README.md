@@ -2613,3 +2613,99 @@ fn longest<'a>(x: &str, y: &str) -> &'a str {
 ```
 
 ## Lifetime Annotations in Struct Definitions
+
+- should add a lifetime annotation on every reference in the struct's definition
+
+```rs
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+fn main() {
+    let novel = String::from("Call me Ishmael. Some years ago...");
+    let first_sentence = novel.split('.').next().expect("Could not find a '.'");
+    let i = ImportantExcerpt {
+        part: first_sentence,
+    };
+}
+```
+
+- an instance of `ImportantExcerpt` can't outlive the reference it holds in its `part` filed
+- novel -> first_sentence -> part
+- novel doesn't go out of scope until after the `ImportantExcerpt` goes out of scope
+
+## Lifetime Elision
+
+- every reference has a lifetime, need to specify except below rules
+
+1. Each reference param gets its own lifetime param
+
+```rs
+fn foo<'a, 'b>(x: &'a i32, y: &'b i32)
+```
+
+2. If only one input lifetime param, assign to all output lifetime params
+
+```rs
+fn foo<'a>(x: &'a i32) -> &'a i32
+```
+
+3. If multiple input lifetime params, but with `&self`; which means method; the lifetime of `&self` is assigned to all output lifetime
+
+```rs
+fn longest(x: &str, y: &str) -> &str {
+```
+
+- adjust 1st rule
+
+```rs
+fn longest<'a, 'b>(x: &'a str, y: &'b str) -> &str {
+```
+
+- try 2nd rule => fail, it has more than 2 input params
+- TRY 3rd rule => fail, it has multiple params but no self => not method => we should manully write lifetime annotation
+
+## Lifetime Annotations in Method Definitions
+
+```rs
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part(&self, announcement: &str) -> &str {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+
+- 1st elision rule for `&self`
+- 3rd elision rule for return type
+
+## The Static Lifetime
+
+```rs
+let s: &'static str = "I have a static lifetime.";
+```
+
+- can live for the entire duration of the program
+- all string literal is stored directly in teh program's binray => `'static`
+
+## Generic Type Parameters, Trait Bounds, and Lifetimes Together
+
+```rs
+use std::fmt::Display;
+
+fn longest_with_an_announcement<'a, T>( // lifetimes is also a type of generic
+    x: &'a str,
+    y: &'a str,
+    ann: T,
+) -> &'a str
+where
+    T: Display,
+{
+    println!("Announcement! {}", ann);
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
