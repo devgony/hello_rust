@@ -2226,6 +2226,7 @@ enum Result<T, E> {
 
 - `impl` can be with either methods only on concrete type or generic type
 - methods way will impl the method on specific type only.
+- `fn` can has different generic with `struct`
 
 ```rs
 struct Point<T, U> {
