@@ -914,7 +914,7 @@ struct AlwaysEqual;
 let subject = AlwaysEqual;
 ```
 
-- when don't have any data that you want to sotre in the type itself.
+- when don't have any data that you want to store in the type itself.
 - empty struct -> for trait
 
 ## Ownership of Struct Data
@@ -1028,7 +1028,7 @@ fn main() {
 
 # 5.3. Method Syntax
 
-- similar to fuinctions
+- similar to functions
 - but defined within the context of a struct (or an enum or a trait)
 - first param is always `self`: the instance of the struct the method is being called on
 
